@@ -115,7 +115,7 @@ public class ClienteController {
     }
 
     private void listarTodosClientes() {
-        List<Cliente> clientes = clienteUseCases.buscarTodosClientes();
+        List<Cliente> clientes = clienteUseCases.listarTodosClientes();
         if (clientes.isEmpty()) {
             System.out.println("Nenhum cliente cadastrado.");
         } else {
