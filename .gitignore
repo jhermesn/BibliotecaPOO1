@@ -1,0 +1,6 @@
+.idea/
+.vscode/
+BibliotecaPOO1.iml
+out/
+bin/
+resources/application.properties
