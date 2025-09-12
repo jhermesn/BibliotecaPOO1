@@ -35,7 +35,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -65,4 +66,3 @@ jobs:
         asset_path: ./Biblioteca.jar
         asset_name: Biblioteca.jar
         asset_content_type: application/java-archive
-
