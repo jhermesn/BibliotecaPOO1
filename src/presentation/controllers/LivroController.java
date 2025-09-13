@@ -5,214 +5,240 @@ import application.usecases.LivroUseCases;
 import domain.entities.Editora;
 import domain.entities.Livro;
 
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
 import java.util.Optional;
-import java.util.Scanner;
 
 public class LivroController {
-    private final Scanner scanner;
     private final LivroUseCases livroUseCases;
     private final EditoraUseCases editoraUseCases;
 
-    public LivroController(Scanner scanner, LivroUseCases livroUseCases, EditoraUseCases editoraUseCases) {
-        this.scanner = scanner;
+    public LivroController(LivroUseCases livroUseCases, EditoraUseCases editoraUseCases) {
         this.livroUseCases = livroUseCases;
         this.editoraUseCases = editoraUseCases;
     }
 
     public void menu() {
-        while (true) {
-            System.out.println("\n--- Gerenciar Livros ---");
-            System.out.println("1. Cadastrar Livro");
-            System.out.println("2. Buscar Livro por ISBN");
-            System.out.println("3. Listar Todos os Livros");
-            System.out.println("4. Atualizar Livro");
-            System.out.println("5. Deletar Livro");
-            System.out.println("0. Voltar ao Menu Principal");
-            System.out.print("Escolha uma opção: ");
+        String[] options = {
+                "Cadastrar Livro",
+                "Buscar Livro por ISBN",
+                "Listar Todos os Livros",
+                "Atualizar Livro",
+                "Deletar Livro",
+                "Voltar ao Menu Principal"
+        };
 
-            int choice = scanner.nextInt();
-            scanner.nextLine(); 
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(
+                    null,
+                    "Selecione uma opção:",
+                    "Gerenciar Livros",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
+
+            if (choice == JOptionPane.CLOSED_OPTION || choice == 5) { // Voltar
+                return;
+            }
 
             switch (choice) {
-                case 1:
-                    cadastrarLivro();
-                    break;
-                case 2:
-                    buscarLivroPorIsbn();
-                    break;
-                case 3:
-                    listarTodosLivros();
-                    break;
-                case 4:
-                    atualizarLivro();
-                    break;
-                case 5:
-                    deletarLivro();
-                    break;
-                case 0:
-                    return;
-                default:
-                    System.out.println("Opção inválida.");
+                case 0 -> cadastrarLivro();
+                case 1 -> buscarLivroPorIsbn();
+                case 2 -> listarTodosLivros();
+                case 3 -> atualizarLivro();
+                case 4 -> deletarLivro();
             }
         }
     }
 
     private void cadastrarLivro() {
-        if (editoraUseCases.listarTodasEditoras().isEmpty()) {
-            System.out.println("\nErro: Nenhuma editora cadastrada. Cadastre uma editora antes de criar um livro.");
+        List<Editora> editoras = editoraUseCases.listarTodasEditoras();
+        if (editoras.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "Erro: Nenhuma editora cadastrada. Cadastre uma editora antes de criar um livro.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        System.out.print("ISBN: ");
-        String isbn = scanner.nextLine();
+        String isbn = JOptionPane.showInputDialog("ISBN:");
+        if (isbn == null) return;
         if (livroUseCases.buscarLivroPorIsbn(isbn).isPresent()) {
-            System.out.println("Erro: Já existe um livro com este ISBN.");
+            JOptionPane.showMessageDialog(null, "Erro: Já existe um livro com este ISBN.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        System.out.print("Nome: ");
-        String nome = scanner.nextLine();
-        System.out.print("Autor: ");
-        String autor = scanner.nextLine();
-        System.out.print("Assunto: ");
-        String assunto = scanner.nextLine();
-        System.out.print("Estoque: ");
-        int estoque = scanner.nextInt();
-        scanner.nextLine();
+        String nome = JOptionPane.showInputDialog("Nome:");
+        if (nome == null) return;
+        String autor = JOptionPane.showInputDialog("Autor:");
+        if (autor == null) return;
+        String assunto = JOptionPane.showInputDialog("Assunto:");
+        if (assunto == null) return;
 
-        System.out.println("\n--- Editoras Disponíveis ---");
-        editoraUseCases.listarTodasEditoras().forEach(e -> System.out.println("ID: " + e.getId() + ", Nome: " + e.getNome()));
-        System.out.print("ID da Editora: ");
-        int editoraId = scanner.nextInt();
-        scanner.nextLine();
+        int estoque;
+        try {
+            String estoqueStr = JOptionPane.showInputDialog("Estoque:");
+            if (estoqueStr == null) return;
+            estoque = Integer.parseInt(estoqueStr);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Estoque inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-        Optional<Editora> editoraOpt = editoraUseCases.buscarEditoraPorId(editoraId);
-        if (editoraOpt.isEmpty()) {
-            System.out.println("Erro: Editora com ID " + editoraId + " não encontrada.");
+        Editora editoraSelecionada = selectEditoraDialog(editoras);
+        if (editoraSelecionada == null) {
             return;
         }
 
         try {
-            Livro livro = new Livro(isbn, editoraOpt.get(), nome, autor, assunto, estoque);
+            Livro livro = new Livro(isbn, editoraSelecionada, nome, autor, assunto, estoque);
             livroUseCases.criarLivro(livro);
-            System.out.println("Livro cadastrado com sucesso!");
+            JOptionPane.showMessageDialog(null, "Livro cadastrado com sucesso!");
         } catch (Exception e) {
-            System.out.println("Erro ao cadastrar livro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro ao cadastrar livro: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void buscarLivroPorIsbn() {
-        System.out.print("ISBN do Livro: ");
-        String isbn = scanner.nextLine();
+        String isbn = JOptionPane.showInputDialog("ISBN do Livro:");
+        if (isbn == null) return;
 
         livroUseCases.buscarLivroPorIsbn(isbn).ifPresentOrElse(
                 l -> {
-                    System.out.println("\n--- Dados do Livro ---");
-                    System.out.println("ISBN: " + l.getIsbn());
-                    System.out.println("Nome: " + l.getNome());
-                    System.out.println("Autor: " + l.getNome_autor());
-                    System.out.println("Assunto: " + l.getAssunto());
-                    System.out.println("Estoque: " + l.getEstoque());
-                    System.out.println("Editora: " + l.getEditora().getNome());
+                    String info = """
+                            --- Dados do Livro ---
+                            ISBN: %s
+                            Nome: %s
+                            Autor: %s
+                            Assunto: %s
+                            Estoque: %d
+                            Editora: %s
+                            """.formatted(l.getIsbn(), l.getNome(), l.getNome_autor(), l.getAssunto(), l.getEstoque(), l.getEditora().getNome());
+                    JOptionPane.showMessageDialog(null, info, "Dados do Livro", JOptionPane.INFORMATION_MESSAGE);
                 },
-                () -> System.out.println("Livro não encontrado.")
+                () -> JOptionPane.showMessageDialog(null, "Livro não encontrado.", "Erro", JOptionPane.ERROR_MESSAGE)
         );
     }
 
     private void listarTodosLivros() {
-        System.out.println("\n--- Lista de Livros ---");
-        var livros = livroUseCases.listarTodosLivros();
+        List<Livro> livros = livroUseCases.listarTodosLivros();
         if (livros.isEmpty()) {
-            System.out.println("Nenhum livro cadastrado.");
+            JOptionPane.showMessageDialog(null, "Nenhum livro cadastrado.");
         } else {
-            livros.forEach(l -> System.out.println(
-                    "ISBN: " + l.getIsbn() + ", Nome: " + l.getNome() + ", Editora: " + l.getEditora().getNome()
-            ));
+            StringBuilder sb = new StringBuilder("--- Lista de Livros ---\n");
+            for (Livro l : livros) {
+                sb.append("-------------------------\n");
+                sb.append("ISBN: ").append(l.getIsbn()).append("\n");
+                sb.append("Nome: ").append(l.getNome()).append("\n");
+                sb.append("Editora: ").append(l.getEditora().getNome()).append("\n");
+            }
+            JTextArea textArea = new JTextArea(sb.toString());
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            scrollPane.setPreferredSize(new Dimension(500, 500));
+            JOptionPane.showMessageDialog(null, scrollPane, "Lista de Livros", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void atualizarLivro() {
-        System.out.print("ISBN do livro a ser atualizado: ");
-        String isbn = scanner.nextLine();
+        String isbn = JOptionPane.showInputDialog("ISBN do livro a ser atualizado:");
+        if (isbn == null) return;
 
         Optional<Livro> livroOpt = livroUseCases.buscarLivroPorIsbn(isbn);
         if (livroOpt.isEmpty()) {
-            System.out.println("Livro não encontrado.");
+            JOptionPane.showMessageDialog(null, "Livro não encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         Livro livro = livroOpt.get();
 
-        System.out.print("Novo Nome (Deixe em branco para manter: " + livro.getNome() + "): ");
-        String nome = scanner.nextLine();
-        if (!nome.isBlank()) {
-            livro.setNome(nome);
+        String nome = JOptionPane.showInputDialog("Novo Nome:", livro.getNome());
+        if (nome == null) return;
+        livro.setNome(nome);
+
+        String autor = JOptionPane.showInputDialog("Novo Autor:", livro.getNome_autor());
+        if (autor == null) return;
+        livro.setNome_autor(autor);
+
+        String assunto = JOptionPane.showInputDialog("Novo Assunto:", livro.getAssunto());
+        if (assunto == null) return;
+        livro.setAssunto(assunto);
+
+        try {
+            String estoqueStr = JOptionPane.showInputDialog("Novo Estoque:", livro.getEstoque());
+            if (estoqueStr == null) return;
+            livro.setEstoque(Integer.parseInt(estoqueStr));
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Estoque inválido. Mantendo o valor anterior.", "Aviso", JOptionPane.WARNING_MESSAGE);
         }
 
-        System.out.print("Novo Autor (Deixe em branco para manter: " + livro.getNome_autor() + "): ");
-        String autor = scanner.nextLine();
-        if (!autor.isBlank()) {
-            livro.setNome_autor(autor);
-        }
-
-        System.out.print("Novo Assunto (Deixe em branco para manter: " + livro.getAssunto() + "): ");
-        String assunto = scanner.nextLine();
-        if (!assunto.isBlank()) {
-            livro.setAssunto(assunto);
-        }
-
-        System.out.print("Novo Estoque (Deixe em branco para manter: " + livro.getEstoque() + "): ");
-        String estoqueStr = scanner.nextLine();
-        if (!estoqueStr.isBlank()) {
-            try {
-                livro.setEstoque(Integer.parseInt(estoqueStr));
-            } catch (NumberFormatException e) {
-                System.out.println("Estoque inválido. Mantendo o valor anterior.");
-            }
-        }
-
-        System.out.println("\n--- Editoras Disponíveis ---");
-        editoraUseCases.listarTodasEditoras().forEach(e -> System.out.println("ID: " + e.getId() + ", Nome: " + e.getNome()));
-        System.out.print("Novo ID da Editora (Deixe em branco para manter: " + livro.getEditora().getNome() + "): ");
-        String editoraIdStr = scanner.nextLine();
-        if (!editoraIdStr.isBlank()) {
-            try {
-                int editoraId = Integer.parseInt(editoraIdStr);
-                Optional<Editora> editoraOpt = editoraUseCases.buscarEditoraPorId(editoraId);
-                if (editoraOpt.isPresent()) {
-                    livro.setEditora(editoraOpt.get());
-                } else {
-                    System.out.println("Editora não encontrada. Mantendo a anterior.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("ID da editora inválido. Mantendo a anterior.");
-            }
+        List<Editora> editoras = editoraUseCases.listarTodasEditoras();
+        Editora novaEditora = selectEditoraDialog(editoras, livro.getEditora());
+        if (novaEditora != null) {
+            livro.setEditora(novaEditora);
         }
 
         try {
             livroUseCases.atualizarLivro(livro);
-            System.out.println("Livro atualizado com sucesso.");
+            JOptionPane.showMessageDialog(null, "Livro atualizado com sucesso.");
         } catch (Exception e) {
-            System.out.println("Erro ao atualizar livro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro ao atualizar livro: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void deletarLivro() {
-        System.out.print("ISBN do livro a ser deletado: ");
-        String isbn = scanner.nextLine();
+        String isbn = JOptionPane.showInputDialog("ISBN do livro a ser deletado:");
+        if (isbn == null) return;
 
         if (livroUseCases.buscarLivroPorIsbn(isbn).isEmpty()) {
-            System.out.println("Erro: Livro não encontrado.");
+            JOptionPane.showMessageDialog(null, "Erro: Livro não encontrado.", "Erro", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(null, "Tem certeza que deseja deletar este livro?", "Confirmar Deleção", JOptionPane.YES_NO_OPTION);
+        if (confirm != JOptionPane.YES_OPTION) {
             return;
         }
 
         try {
             livroUseCases.deletarLivro(isbn);
-            System.out.println("Livro deletado com sucesso.");
+            JOptionPane.showMessageDialog(null, "Livro deletado com sucesso.");
         } catch (IllegalStateException e) {
-            System.out.println("Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage(), "Erro de Deleção", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
-            System.out.println("Ocorreu um erro inesperado ao deletar o livro.");
+            JOptionPane.showMessageDialog(null, "Ocorreu um erro inesperado ao deletar o livro.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private Editora selectEditoraDialog(List<Editora> editoras) {
+        return selectEditoraDialog(editoras, null);
+    }
+
+    private Editora selectEditoraDialog(List<Editora> editoras, Editora preselecionada) {
+        String[] editorasArray = editoras.stream()
+                .map(e -> e.getId() + ": " + e.getNome())
+                .toArray(String[]::new);
+
+        int preselectIndex = -1;
+        if (preselecionada != null) {
+            for (int i = 0; i < editoras.size(); i++) {
+                if (editoras.get(i).getId().equals(preselecionada.getId())) {
+                    preselectIndex = i;
+                    break;
+                }
+            }
+        }
+
+        String selected = (String) JOptionPane.showInputDialog(null, "Selecione a Editora",
+                "Editoras", JOptionPane.QUESTION_MESSAGE, null, editorasArray, preselectIndex != -1 ? editorasArray[preselectIndex] : editorasArray[0]);
+
+        if (selected == null) {
+            return null;
+        }
+
+        int editoraId = Integer.parseInt(selected.split(":")[0]);
+        return editoras.stream().filter(e -> e.getId() == editoraId).findFirst().orElse(null);
     }
 }

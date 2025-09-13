@@ -5,7 +5,7 @@ import domain.repositories.*;
 import infrastructure.repositories.*;
 import presentation.controllers.*;
 
-import java.util.Scanner;
+import javax.swing.*;
 
 public class Main {
 
@@ -20,48 +20,46 @@ public class Main {
         EditoraUseCases editoraUseCases = new EditoraUseCases(editoraRepository, livroRepository);
         CompraUseCases compraUseCases = new CompraUseCases(compraRepository, livroRepository);
 
-        Scanner scanner = new Scanner(System.in);
-        ClienteController clienteController = new ClienteController(scanner, clienteUseCases);
-        LivroController livroController = new LivroController(scanner, livroUseCases, editoraUseCases);
-        EditoraController editoraController = new EditoraController(scanner, editoraUseCases);
-        CompraController compraController = new CompraController(scanner, compraUseCases, clienteUseCases, livroUseCases);
+        ClienteController clienteController = new ClienteController(clienteUseCases);
+        LivroController livroController = new LivroController(livroUseCases, editoraUseCases);
+        EditoraController editoraController = new EditoraController(editoraUseCases);
+        CompraController compraController = new CompraController(compraUseCases, clienteUseCases, livroUseCases);
 
-        mainMenu(scanner, clienteController, livroController, editoraController, compraController);
-
-        scanner.close();
+        mainMenu(clienteController, livroController, editoraController, compraController);
     }
 
-    private static void mainMenu(Scanner scanner, ClienteController clienteController, LivroController livroController, EditoraController editoraController, CompraController compraController) {
+    private static void mainMenu(ClienteController clienteController, LivroController livroController, EditoraController editoraController, CompraController compraController) {
+        String[] options = {"Gerenciar Clientes", "Gerenciar Livros", "Gerenciar Editoras", "Gerenciar Compras", "Sair"};
         while (true) {
-            System.out.println("\n--- Menu Principal ---");
-            System.out.println("1. Gerenciar Clientes");
-            System.out.println("2. Gerenciar Livros");
-            System.out.println("3. Gerenciar Editoras");
-            System.out.println("4. Gerenciar Compras");
-            System.out.println("0. Sair");
-            System.out.print("Escolha uma opção: ");
+            int choice = JOptionPane.showOptionDialog(
+                    null,
+                    "Selecione uma opção:",
+                    "Menu Principal",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
 
-            int choice = scanner.nextInt();
-            scanner.nextLine(); 
+            if (choice == JOptionPane.CLOSED_OPTION || choice == 4) { // Sair
+                JOptionPane.showMessageDialog(null, "Saindo...");
+                return;
+            }
 
             switch (choice) {
-                case 1:
+                case 0: // Gerenciar Clientes
                     clienteController.menu();
                     break;
-                case 2:
+                case 1: // Gerenciar Livros
                     livroController.menu();
                     break;
-                case 3:
+                case 2: // Gerenciar Editoras
                     editoraController.menu();
                     break;
-                case 4:
+                case 3: // Gerenciar Compras
                     compraController.menu();
                     break;
-                case 0:
-                    System.out.println("Saindo...");
-                    return;
-                default:
-                    System.out.println("Opção inválida. Tente novamente.");
             }
         }
     }

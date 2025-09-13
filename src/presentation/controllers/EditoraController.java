@@ -4,165 +4,179 @@ import application.usecases.EditoraUseCases;
 import domain.entities.Editora;
 import domain.utils.FormatUtils;
 
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
 
 public class EditoraController {
-    private final Scanner scanner;
     private final EditoraUseCases editoraUseCases;
 
-    public EditoraController(Scanner scanner, EditoraUseCases editoraUseCases) {
-        this.scanner = scanner;
+    public EditoraController(EditoraUseCases editoraUseCases) {
         this.editoraUseCases = editoraUseCases;
     }
 
     public void menu() {
-        while (true) {
-            System.out.println("\n--- Gerenciar Editoras ---");
-            System.out.println("1. Cadastrar Editora");
-            System.out.println("2. Buscar Editora por ID");
-            System.out.println("3. Listar Todas as Editoras");
-            System.out.println("4. Atualizar Editora");
-            System.out.println("5. Deletar Editora");
-            System.out.println("0. Voltar ao Menu Principal");
-            System.out.print("Escolha uma opção: ");
+        String[] options = {
+                "Cadastrar Editora",
+                "Buscar Editora por ID",
+                "Listar Todas as Editoras",
+                "Atualizar Editora",
+                "Deletar Editora",
+                "Voltar ao Menu Principal"
+        };
 
-            int choice = scanner.nextInt();
-            scanner.nextLine();
+        while (true) {
+            int choice = JOptionPane.showOptionDialog(
+                    null,
+                    "Selecione uma opção:",
+                    "Gerenciar Editoras",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    options,
+                    options[0]
+            );
+
+            if (choice == JOptionPane.CLOSED_OPTION || choice == 5) { // Voltar
+                return;
+            }
 
             switch (choice) {
-                case 1:
-                    cadastrarEditora();
-                    break;
-                case 2:
-                    buscarEditoraPorId();
-                    break;
-                case 3:
-                    listarTodasEditoras();
-                    break;
-                case 4:
-                    atualizarEditora();
-                    break;
-                case 5:
-                    deletarEditora();
-                    break;
-                case 0:
-                    return;
-                default:
-                    System.out.println("Opção inválida.");
+                case 0 -> cadastrarEditora();
+                case 1 -> buscarEditoraPorId();
+                case 2 -> listarTodasEditoras();
+                case 3 -> atualizarEditora();
+                case 4 -> deletarEditora();
             }
         }
     }
 
     private void cadastrarEditora() {
-        System.out.print("Nome: ");
-        String nome = scanner.nextLine();
-        System.out.print("Endereço: ");
-        String endereco = scanner.nextLine();
-        System.out.print("Telefone: ");
-        String telefone = scanner.nextLine();
-        System.out.print("Nome do Gerente: ");
-        String gerente = scanner.nextLine();
+        String nome = JOptionPane.showInputDialog("Nome:");
+        if (nome == null) return;
+        String endereco = JOptionPane.showInputDialog("Endereço:");
+        if (endereco == null) return;
+        String telefone = JOptionPane.showInputDialog("Telefone:");
+        if (telefone == null) return;
+        String gerente = JOptionPane.showInputDialog("Nome do Gerente:");
+        if (gerente == null) return;
 
         try {
             Editora editora = new Editora(null, nome, endereco, telefone, gerente);
             editoraUseCases.criarEditora(editora);
-            System.out.println("Editora cadastrada com sucesso! ID: " + editora.getId());
+            JOptionPane.showMessageDialog(null, "Editora cadastrada com sucesso! ID: " + editora.getId());
         } catch (Exception e) {
-            System.out.println("Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage(), "Erro de Cadastro", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void buscarEditoraPorId() {
-        System.out.print("ID da Editora: ");
-        int id = scanner.nextInt();
-        scanner.nextLine();
+        String idStr = JOptionPane.showInputDialog("ID da Editora:");
+        if (idStr == null) return;
 
-        editoraUseCases.buscarEditoraPorId(id).ifPresentOrElse(
-                e -> {
-                    System.out.println("\n--- Dados da Editora ---");
-                    System.out.println("ID: " + e.getId());
-                    System.out.println("Nome: " + e.getNome());
-                    System.out.println("Endereço: " + e.getEndereco());
-                    System.out.println("Telefone: " + FormatUtils.formatTelefone(e.getTelefone()));
-                    System.out.println("Gerente: " + e.getNome_gerente());
-                },
-                () -> System.out.println("Editora não encontrada.")
-        );
+        try {
+            int id = Integer.parseInt(idStr);
+            editoraUseCases.buscarEditoraPorId(id).ifPresentOrElse(
+                    e -> {
+                        String info = """
+                                --- Dados da Editora ---
+                                ID: %d
+                                Nome: %s
+                                Endereço: %s
+                                Telefone: %s
+                                Gerente: %s
+                                """.formatted(e.getId(), e.getNome(), e.getEndereco(), FormatUtils.formatTelefone(e.getTelefone()), e.getNome_gerente());
+                        JOptionPane.showMessageDialog(null, info, "Dados da Editora", JOptionPane.INFORMATION_MESSAGE);
+                    },
+                    () -> JOptionPane.showMessageDialog(null, "Editora não encontrada.", "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "ID inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void listarTodasEditoras() {
-        System.out.println("\n--- Lista de Editoras ---");
-        var editoras = editoraUseCases.listarTodasEditoras();
+        List<Editora> editoras = editoraUseCases.listarTodasEditoras();
         if (editoras.isEmpty()) {
-            System.out.println("Nenhuma editora cadastrada.");
+            JOptionPane.showMessageDialog(null, "Nenhuma editora cadastrada.");
         } else {
-            editoras.forEach(e -> {
-                System.out.println("--------------------");
-                System.out.println("ID: " + e.getId());
-                System.out.println("Nome: " + e.getNome());
-                System.out.println("Telefone: " + FormatUtils.formatTelefone(e.getTelefone()));
-            });
+            StringBuilder sb = new StringBuilder("--- Lista de Editoras ---\n");
+            for (Editora e : editoras) {
+                sb.append("--------------------\n");
+                sb.append("ID: ").append(e.getId()).append("\n");
+                sb.append("Nome: ").append(e.getNome()).append("\n");
+                sb.append("Telefone: ").append(FormatUtils.formatTelefone(e.getTelefone())).append("\n");
+            }
+            JTextArea textArea = new JTextArea(sb.toString());
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            scrollPane.setPreferredSize(new Dimension(500, 500));
+            JOptionPane.showMessageDialog(null, scrollPane, "Lista de Editoras", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void atualizarEditora() {
-        System.out.print("ID da editora a ser atualizada: ");
-        int id = scanner.nextInt();
-        scanner.nextLine();
+        String idStr = JOptionPane.showInputDialog("ID da editora a ser atualizada:");
+        if (idStr == null) return;
 
-        editoraUseCases.buscarEditoraPorId(id).ifPresentOrElse(
-                editora -> {
-                    System.out.println("\n--- Dados Atuais da Editora ---");
-                    System.out.println("ID: " + editora.getId());
-                    System.out.println("Nome: " + editora.getNome());
-                    System.out.println("Endereço: " + editora.getEndereco());
-                    System.out.println("Telefone: " + FormatUtils.formatTelefone(editora.getTelefone()));
-                    System.out.println("Gerente: " + editora.getNome_gerente());
+        try {
+            int id = Integer.parseInt(idStr);
+            editoraUseCases.buscarEditoraPorId(id).ifPresentOrElse(
+                    editora -> {
+                        String nome = JOptionPane.showInputDialog("Novo Nome:", editora.getNome());
+                        if (nome == null) return;
+                        String endereco = JOptionPane.showInputDialog("Novo Endereço:", editora.getEndereco());
+                        if (endereco == null) return;
+                        String telefone = JOptionPane.showInputDialog("Novo Telefone:", editora.getTelefone());
+                        if (telefone == null) return;
+                        String gerente = JOptionPane.showInputDialog("Novo Nome do Gerente:", editora.getNome_gerente());
+                        if (gerente == null) return;
 
-                    System.out.println("\nDigite os novos dados (deixe em branco para não alterar):");
+                        try {
+                            editora.setNome(nome);
+                            editora.setEndereco(endereco);
+                            editora.setTelefone(telefone);
+                            editora.setNome_gerente(gerente);
 
-                    System.out.print("Novo Nome: ");
-                    String nome = scanner.nextLine();
-                    System.out.print("Novo Endereço: ");
-                    String endereco = scanner.nextLine();
-                    System.out.print("Novo Telefone: ");
-                    String telefone = scanner.nextLine();
-                    System.out.print("Novo Nome do Gerente: ");
-                    String gerente = scanner.nextLine();
-
-                    try {
-                        if (!nome.isBlank()) editora.setNome(nome);
-                        if (!endereco.isBlank()) editora.setEndereco(endereco);
-                        if (!telefone.isBlank()) editora.setTelefone(telefone);
-                        if (!gerente.isBlank()) editora.setNome_gerente(gerente);
-
-                        editoraUseCases.atualizarEditora(editora);
-                        System.out.println("Editora atualizada com sucesso!");
-                    } catch (Exception e) {
-                        System.out.println("Erro ao atualizar editora: " + e.getMessage());
-                    }
-                },
-                () -> System.out.println("Editora não encontrada.")
-        );
+                            editoraUseCases.atualizarEditora(editora);
+                            JOptionPane.showMessageDialog(null, "Editora atualizada com sucesso!");
+                        } catch (Exception e) {
+                            JOptionPane.showMessageDialog(null, "Erro ao atualizar editora: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                        }
+                    },
+                    () -> JOptionPane.showMessageDialog(null, "Editora não encontrada.", "Erro", JOptionPane.ERROR_MESSAGE)
+            );
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "ID inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void deletarEditora() {
-        System.out.print("ID da editora a ser deletada: ");
-        int id = scanner.nextInt();
-        scanner.nextLine();
-
-        if (editoraUseCases.buscarEditoraPorId(id).isEmpty()) {
-            System.out.println("Erro: Editora não encontrada.");
-            return;
-        }
+        String idStr = JOptionPane.showInputDialog("ID da editora a ser deletada:");
+        if (idStr == null) return;
 
         try {
+            int id = Integer.parseInt(idStr);
+            if (editoraUseCases.buscarEditoraPorId(id).isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Erro: Editora não encontrada.", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            int confirm = JOptionPane.showConfirmDialog(null, "Tem certeza que deseja deletar esta editora?", "Confirmar Deleção", JOptionPane.YES_NO_OPTION);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
             editoraUseCases.deletarEditora(id);
-            System.out.println("Editora deletada com sucesso.");
+            JOptionPane.showMessageDialog(null, "Editora deletada com sucesso.");
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "ID inválido.", "Erro", JOptionPane.ERROR_MESSAGE);
         } catch (IllegalStateException e) {
-            System.out.println("Erro: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "Erro: " + e.getMessage(), "Erro de Deleção", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
-            System.out.println("Ocorreu um erro inesperado ao deletar a editora.");
+            JOptionPane.showMessageDialog(null, "Ocorreu um erro inesperado ao deletar a editora.", "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 }
