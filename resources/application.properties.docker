@@ -1,0 +1,4 @@
+dburl=jdbc:mysql://db:3306/biblioteca_poo1?useSSL=false&serverTimezone=UTC
+user=root
+password=example
+

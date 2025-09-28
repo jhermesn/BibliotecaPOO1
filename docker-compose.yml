@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.4
+    container_name: biblioteca-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "example"
+      MYSQL_DATABASE: biblioteca_poo1
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/main.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build: .
+    image: biblioteca-app:latest
+    container_name: biblioteca-app
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./resources/application.properties.docker:/app/resources/application.properties:ro
+    ports:
+      - "6080:6080"
+    restart: unless-stopped
+
+volumes:
+  db_data:

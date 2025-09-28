@@ -38,6 +38,42 @@ Este projeto é um sistema de gerenciamento de livraria em Java, desenvolvido pa
   java -cp "bin;lib/mysql-connector-j-9.4.0.jar" application.Main
 ```
 
+## 🐳 Executar com Docker (recomendado)
+
+Este projeto possui Dockerfile e docker-compose.yml para subir o MySQL e o aplicativo Java juntos.
+
+Modo padrão (sem VcXsrv): a interface Swing abre no navegador via noVNC.
+
+Passos:
+1) Na raiz do projeto, construa e suba os serviços em segundo plano:
+```cmd
+docker compose up -d --build
+```
+2) Aguarde o MySQL ficar saudável (opcional):
+```cmd
+docker compose logs -f db
+```
+3) Abra a UI no navegador: http://localhost:6080/vnc.html/
+
+Observações:
+- Não é necessário instalar servidor X no Windows (VcXsrv). A imagem já inclui Xvfb + x11vnc + noVNC.
+- O banco de dados inicializa com o schema do arquivo database/main.sql automaticamente (apenas no primeiro start do volume).
+- Credenciais padrão de exemplo: usuário `root` e senha `example`. Você pode alterar a senha ajustando `MYSQL_ROOT_PASSWORD` no `docker-compose.yml` e o arquivo `resources/application.properties.docker`.
+- A porta do MySQL não é exposta ao host para evitar conflitos. Se quiser acessar o MySQL pelo host (Workbench/DBeaver), adicione no serviço `db` do docker-compose:
+```yaml
+ports:
+  - "3307:3306"
+```
+E conecte em 127.0.0.1:3307.
+- Para derrubar os serviços:
+```cmd
+docker compose down
+```
+- Para derrubar e remover os dados do MySQL (volume):
+```cmd
+docker compose down -v
+```
+
 ## 📂 Estrutura do Projeto
 
 *   `src/domain`: Entidades de negócio e interfaces dos repositórios.
